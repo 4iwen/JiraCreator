@@ -1,12 +1,17 @@
 import json
 import copy
+import os
 from flask import Flask, render_template, request, jsonify
 from jira import JIRA
 from waitress import serve
 
 import utils
 
-CONFIG = json.load(open('./config.json', 'r', encoding='utf-8'))
+config_name = 'config.json'
+dir_path = os.path.dirname(os.path.realpath(__file__))
+file_path = os.path.join(dir_path, config_name)
+config_file = open(file_path, 'r', encoding='utf-8')
+CONFIG = json.load(config_file)
 APP = Flask(__name__)
 JIRA = JIRA(server=CONFIG['jira']['server'],
             basic_auth=(CONFIG['jira']['email'],
