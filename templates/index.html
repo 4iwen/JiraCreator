@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Jira Creator</title>
+    <link rel="stylesheet"
+          type="text/css"
+          href="../static/semantic/dist/semantic.min.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+            integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+            crossorigin="anonymous"></script>
+    <script src="../static/semantic/dist/semantic.min.js"></script>
+    <script>
+        $( document ).ready(function() {
+            $('#project').dropdown({clearable: true});
+        });
+
+        function enter() {
+            var project = $('#project').dropdown('get value');
+            window.location.href = '/creator?project=' + project;
+        }
+    </script>
+</head>
+<body>
+<div class="ui center aligned grid" style="height: 100%">
+    <div class="column">
+        <div class="ui hidden divider"></div>
+        <h1 class="ui header">Jira Creator</h1>
+        <div class="ui hidden section divider"></div>
+        <div class="field">
+            <label for="project">Select the project you want to use below:</label>
+            <br/>
+            <select id="project" name="project">
+                <option value="">Project</option>
+                {% for project in projects %}
+                <option value="{{ project.key }}">{{ project.name }}</option>
+                {% endfor %}
+            </select>
+            <button class="ui positive icon button" onclick="enter()">
+                <i class="sign-in icon"></i>
+            </button>
+        </div>
+    </div>
+</div>
+</body>
+</html>

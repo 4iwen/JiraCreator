@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <meta content="ie=edge" http-equiv="X-UA-Compatible">
+    <title>Jira Creator: {{ project }}</title>
+    <link rel="stylesheet"
+          type="text/css"
+          href="../static/semantic/dist/semantic.min.css">
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+            integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+            crossorigin="anonymous"></script>
+    <script src="../static/semantic/dist/semantic.min.js"></script>
+    <script>
+        function uploadTasks() {
+            var fileInput = document.getElementById('taskFileInput');
+            fileInput.click();
+
+            fileInput.onchange = function () {
+                // get the file inputs and post them using ajax
+                var file = fileInput.files[0];
+                var formData = new FormData();
+                formData.append('file', file);
+
+                $.ajax({
+                    url: '/upload-tasks',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function () {
+                        location.reload();
+                    }
+                });
+            };
+        }
+
+        function downloadTasks() {
+            $.ajax({
+                url: '/raw-tasks',
+                type: 'GET',
+                success: function (data) {
+                    var json = JSON.stringify(data);
+                    var blob = new Blob([json], {type: 'application/json'});
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'tasks.json';
+                    a.click();
+                    // cleanup
+                    window.URL.revokeObjectURL(url);
+                }
+            });
+        }
+
+        function uploadVariables() {
+            var fileInput = document.getElementById('variableFileInput');
+            fileInput.click();
+
+            fileInput.onchange = function () {
+                // get the file inputs and post them using ajax
+                var file = fileInput.files[0];
+                var formData = new FormData();
+                formData.append('file', file);
+
+                $.ajax({
+                    url: '/upload-variables',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function () {
+                        location.reload();
+                    }
+                });
+            };
+        }
+
+        function downloadVariables() {
+            $.ajax({
+                url: '/variables',
+                type: 'GET',
+                success: function (data) {
+                    var json = JSON.stringify(data);
+                    var blob = new Blob([json], {type: 'application/json'});
+                    var url = window.URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'variables.json';
+                    a.click();
+                    // cleanup
+                    window.URL.revokeObjectURL(url);
+                }
+            });
+        }
+
+        function onLoad() {
+            $('#add-task-sprint').dropdown({clearable: true});
+            $('#add-task-assignee').dropdown({clearable: true});
+            $('#add-task-type').dropdown({clearable: true});
+            $('#add-task-order-type').dropdown({clearable: true});
+        }
+
+        function showAddTaskModal() {
+            $('#add-task-modal')
+                .modal('setting', 'closable', false)
+                .modal('setting', 'autofocus', false)
+                .modal('setting', 'duration', 200)
+                .modal('show');
+        }
+
+        function showEditTaskModal(task) {
+            $('#edit-task-modal')
+                .modal('setting', 'closable', false)
+                .modal('setting', 'autofocus', false)
+                .modal('setting', 'duration', 200)
+                .modal('show');
+
+            var taskId = task.getAttribute('data-task-id');
+
+            $.ajax({
+                url: '/tasks/' + taskId,
+                type: 'GET',
+                success: function (data) {
+                    $('#edit-task-id').val(taskId);
+                    $('#edit-task-name').val(data['name']);
+                    $('#edit-task-description').val(data['description']);
+                    $('#edit-task-label').val(data['label']);
+                    $('#edit-task-sprint').dropdown('set selected', data['sprint']);
+                    $('#edit-task-assignee').dropdown('set selected', data['assignee']);
+                    $('#edit-task-type').dropdown('set selected', data['type']);
+                    $('#edit-task-order-type').dropdown('set selected', data['order']);
+                }
+            });
+
+        }
+
+        function addTask() {
+            $.ajax({
+                url: '/add-task',
+                type: 'POST',
+                data: {
+                    'task-name': $('#add-task-name').val(),
+                    'task-description': $('#add-task-description').val(),
+                    'task-label': $('#add-task-label').val(),
+                    'task-sprint': $('#add-task-sprint').dropdown('get value'),
+                    'task-assignee': $('#add-task-assignee').dropdown('get value'),
+                    'task-type': $('#add-task-type').dropdown('get value'),
+                    'task-order-type': $('#add-task-order-type').dropdown('get value')
+                },
+                success: function () {
+                    location.reload();
+                }
+            });
+        }
+
+        function removeTask(task) {
+            var taskId = task.getAttribute('data-task-id');
+
+            $.ajax({
+                url: '/remove-task',
+                type: 'POST',
+                data: {
+                    'task-id': taskId
+                },
+                success: function () {
+                    location.reload();
+                }
+            });
+        }
+
+        function editTask() {
+            $.ajax({
+                url: '/edit-task',
+                type: 'POST',
+                data: {
+                    'task-id': $('#edit-task-id').val(),
+                    'task-name': $('#edit-task-name').val(),
+                    'task-description': $('#edit-task-description').val(),
+                    'task-label': $('#edit-task-label').val(),
+                    'task-sprint': $('#edit-task-sprint').dropdown('get value'),
+                    'task-assignee': $('#edit-task-assignee').dropdown('get value'),
+                    'task-type': $('#edit-task-type').dropdown('get value'),
+                    'task-order-type': $('#edit-task-order-type').dropdown('get value')
+                },
+                success: function () {
+                    location.reload();
+                }
+            });
+        }
+
+        function showAddVariableModal() {
+            $('#add-variable-modal')
+                .modal('setting', 'closable', false)
+                .modal('setting', 'autofocus', false)
+                .modal('setting', 'duration', 200)
+                .modal('show');
+        }
+
+        function addVariable() {
+            $.ajax({
+                url: '/add-variable',
+                type: 'POST',
+                data: {
+                    'variable-key': $('#add-variable-key').val(),
+                    'variable-value': $('#add-variable-value').val()
+                },
+                success: function () {
+                    location.reload();
+                }
+            });
+        }
+
+        function removeVariable(variable) {
+            var variableId = variable.getAttribute('data-variable-id');
+
+            $.ajax({
+                url: '/remove-variable',
+                type: 'POST',
+                data: {
+                    'variable-id': variableId
+                },
+                success: function () {
+                    location.reload();
+                }
+            });
+        }
+
+        function showEditVariableModal(variable) {
+            $('#edit-variable-modal')
+                .modal('setting', 'closable', false)
+                .modal('setting', 'autofocus', false)
+                .modal('setting', 'duration', 200)
+                .modal('show');
+
+            var variableId = variable.getAttribute('data-variable-id');
+
+            $.ajax({
+                url: '/variables/' + variableId,
+                type: 'GET',
+                success: function (data) {
+                    $('#edit-variable-id').val(variableId);
+                    $('#edit-variable-key').val(data['key']);
+                    $('#edit-variable-value').val(data['value']);
+                }
+            });
+
+        }
+
+        function editVariable() {
+            $.ajax({
+                url: '/edit-variable',
+                type: 'POST',
+                data: {
+                    'variable-id': $('#edit-variable-id').val(),
+                    'variable-key': $('#edit-variable-key').val(),
+                    'variable-value': $('#edit-variable-value').val()
+                },
+                success: function () {
+                    location.reload();
+                }
+            });
+        }
+
+        function showCreateJiraTasksModal() {
+            // get all tasks using ajax get request
+            $.ajax({
+                url: '/tasks',
+                type: 'GET',
+                success: function (data) {
+                    // clear the table
+                    $('#create-jira-tasks-table tbody').empty();
+
+                    // add all tasks to the table
+                    for (var i = 0; i < data.length; i++) {
+                        var task = data[i];
+
+                        var row = '<tr>';
+                        row += '<td>' + task['name'] + '</td>';
+                        row += '<td>' + task['assignee'] + '</td>';
+                        row += '<td>' + task['label'] + '</td>';
+                        row += '<td>' + task['sprint'] + '</td>';
+                        row += '<td>' + task['order'] + '</td>';
+                        row += '<td>' + task['type'] + '</td>';
+                        row += '<td>' + task['description'] + '</td>';
+                        row += '</tr>';
+
+                        $('#create-jira-tasks-table tbody').append(row);
+                    }
+
+                    // show the modal
+                    $('#create-jira-tasks-modal')
+                        .modal('setting', 'closable', false)
+                        .modal('setting', 'autofocus', false)
+                        .modal('setting', 'duration', 200)
+                        .modal('show');
+                }
+            });
+        }
+
+        function createJiraTasks() {
+            $.ajax({
+                url: '/generate',
+                type: 'POST',
+                success: function () {
+                    location.reload();
+                }
+            });
+        }
+    </script>
+</head>
+<body onload="onLoad()">
+<div class="ui center aligned grid" style="height: 100%">
+    <div class="three wide column">
+        <div class="ui hidden divider"></div>
+        <a href="/">
+            <button class="ui icon blue button">
+                <i class="arrow left icon"></i>
+                Back to home page
+            </button>
+        </a>
+        <div class="ui hidden section divider"></div>
+    </div>
+    <div class="ten wide column">
+        <div class="ui hidden divider"></div>
+        <h1 class="ui header">Jira Creator: <em>{{ project }}</em></h1>
+        <div class="ui hidden section divider"></div>
+        <div class="ui blue raised container segment">
+            <div class="ui equal width grid">
+                <div class="row">
+                    <div class="column">
+                        <div class="ui header">Tasks</div>
+                        <div class="ui divided items container segment">
+                            {% if tasks|length > 0 %}
+                            {% for task in tasks %}
+                            <div class="item">
+                                <div>
+                                    <i class="large file alternate icon"></i>
+                                </div>
+                                <div class="middle aligned content">
+                                    <b>{{ task['name'] }}</b>
+                                </div>
+                                <button class="ui icon mini yellow button" onclick="showEditTaskModal(this)"
+                                        data-task-id="{{ task['id'] }}">
+                                    <i class="edit icon"></i>
+                                </button>
+                                <button class="ui icon mini red button" onclick="removeTask(this)"
+                                        data-task-id="{{ task['id'] }}">
+                                    <i class="minus icon"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="item">
+                                <div class="middle aligned content">
+                                    <b>No tasks</b>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <button class="ui left floated icon blue button" onclick="showAddTaskModal()">
+                            <i class="plus icon"></i>
+                        </button>
+                        <button class="ui left floated icon orange button" onclick="downloadTasks()">
+                            <i class="download icon"></i>
+                        </button>
+                        <button class="ui left floated icon green button" onclick="uploadTasks()">
+                            <i class="upload icon"></i>
+                        </button>
+                        <input id="taskFileInput" type="file" style="display:none;"/>
+                    </div>
+                    <div class="column">
+                        <div class="ui header">Variables</div>
+                        <div class="ui divided items container segment">
+                            {% if variables|length > 0 %}
+                            {% for variable in variables %}
+                            <div class="item">
+                                <div>
+                                    <i class="large sticky note icon"></i>
+                                </div>
+                                <div class="middle aligned content">
+                                    <b>{{ variable['key'] }}</b>
+                                </div>
+                                <button class="ui icon mini yellow button" data-variable-id="{{ variable['id'] }}"
+                                        onclick="showEditVariableModal(this)">
+                                    <i class="edit icon"></i>
+                                </button>
+                                <button class="ui icon mini red button" data-variable-id="{{ variable['id'] }}"
+                                        onclick="removeVariable(this)">
+                                    <i class="minus icon"></i>
+                                </button>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <div class="item">
+                                <div class="middle aligned content">
+                                    <b>No variables</b>
+                                </div>
+                            </div>
+                            {% endif %}
+                        </div>
+                        <button class="ui right floated icon green button" onclick="uploadVariables()">
+                            <i class="upload icon"></i>
+                        </button>
+                        <button class="ui right floated icon orange button" onclick="downloadVariables()">
+                            <i class="download icon"></i>
+                        </button>
+                        <button class="ui right floated icon blue button" onclick="showAddVariableModal()">
+                            <i class="plus icon"></i>
+                        </button>
+                        <input id="variableFileInput" type="file" style="display:none;"/>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="three wide column">
+        <div class="ui hidden divider"></div>
+        <button class="ui icon green button" onclick="showCreateJiraTasksModal()">
+            <i class="plus icon"></i>
+            Create Jira tasks
+        </button>
+        <div class="ui hidden section divider"></div>
+    </div>
+</div>
+<!-- Add task modal -->
+<div class="ui small modal" id="add-task-modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Add task
+    </div>
+    <div class="content">
+        <div class="description">
+            <form class="ui form">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="add-task-name">Name</label>
+                        <input type="text" id="add-task-name" name="add-task-name" placeholder="Name">
+                    </div>
+                    <div class="field">
+                        <label for="add-task-assignee">Assignee</label>
+                        <select id="add-task-assignee" name="add-task-assignee">
+                            <option value="">Assignee</option>
+                            {% for assignee in assignees %}
+                            <option value="{{ assignee }}">{{ assignee }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="two fields">
+                    <div class="field">
+                        <label for="add-task-label">Label</label>
+                        <input type="text" id="add-task-label" name="add-task-label" placeholder="Label">
+                    </div>
+                    <div class="field">
+                        <label for="add-task-sprint">Sprint</label>
+                        <select id="add-task-sprint" name="add-task-sprint">
+                            <option value="">Sprint</option>
+                            {% for sprint in sprints %}
+                            <option value="{{ sprint.id }}">{{ sprint.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="two fields">
+                    <div class="field">
+                        <label for="add-task-order-type">Order</label>
+                        <select id="add-task-order-type" name="add-task-order-type">
+                            <option value="">Order</option>
+                            {% for order_type in order_types %}
+                            <option value="{{ order_type.id }}">{{ order_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="add-task-type">Type</label>
+                        <select id="add-task-type" name="add-task-type">
+                            <option value="">Type</option>
+                            {% for type in issue_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="add-task-description">Description</label>
+                    <textarea id="add-task-description" rows="4" name="add-task-description"
+                              placeholder="Description" style="resize: none"></textarea>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui negative deny button">
+            Cancel
+        </div>
+        <div class="ui positive labeled icon button" onclick="addTask()">
+            <i class="plus icon"></i>
+            Save
+        </div>
+    </div>
+</div>
+<!-- Edit task modal -->
+<div class="ui small modal" id="edit-task-modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Edit task
+    </div>
+    <div class="content">
+        <div class="description">
+            <form class="ui form">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="edit-task-name">Name</label>
+                        <input type="text" id="edit-task-name" name="edit-task-name" placeholder="Name">
+                    </div>
+                    <div class="field">
+                        <label for="edit-task-assignee">Assignee</label>
+                        <select id="edit-task-assignee" name="edit-task-assignee">
+                            <option value="">Assignee</option>
+                            {% for assignee in assignees %}
+                            <option value="{{ assignee }}">{{ assignee }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="two fields">
+                    <div class="field">
+                        <label for="edit-task-label">Label</label>
+                        <input type="text" id="edit-task-label" name="edit-task-label" placeholder="Label">
+                    </div>
+                    <div class="field">
+                        <label for="edit-task-sprint">Sprint</label>
+                        <select id="edit-task-sprint" name="edit-task-sprint">
+                            <option value="">Sprint</option>
+                            {% for sprint in sprints %}
+                            <option value="{{ sprint.id }}">{{ sprint.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="two fields">
+                    <div class="field">
+                        <label for="edit-task-order-type">Order</label>
+                        <select id="edit-task-order-type" name="edit-task-order-type">
+                            <option value="">Order</option>
+                            {% for order_type in order_types %}
+                            <option value="{{ order_type.id }}">{{ order_type.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label for="edit-task-type">Type</label>
+                        <select id="edit-task-type" name="edit-task-type">
+                            <option value="">Type</option>
+                            {% for type in issue_types %}
+                            <option value="{{ type }}">{{ type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="field">
+                    <label for="edit-task-description">Description</label>
+                    <textarea id="edit-task-description" rows="4" name="edit-task-description"
+                              placeholder="Description" style="resize: none"></textarea>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui negative deny button">
+            Cancel
+        </div>
+        <div class="ui positive labeled icon button" id="edit-task-id" onclick="editTask()">
+            <i class="plus icon"></i>
+            Save
+        </div>
+    </div>
+</div>
+<!-- Add variable modal -->
+<div class="ui tiny modal" id="add-variable-modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Add variable
+    </div>
+    <div class="content">
+        <div class="description">
+            <form class="ui form">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="add-variable-key">Key</label>
+                        <input type="text" id="add-variable-key" name="add-variable-key" placeholder="Key">
+                    </div>
+                    <div class="field">
+                        <label for="add-variable-value">Value</label>
+                        <input type="text" id="add-variable-value" name="add-variable-value" placeholder="Value">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui negative deny button">
+            Cancel
+        </div>
+        <div class="ui positive labeled icon button" onclick="addVariable()">
+            <i class="plus icon"></i>
+            Save
+        </div>
+    </div>
+</div>
+<!-- Edit variable modal -->
+<div class="ui tiny modal" id="edit-variable-modal">
+    <i class="close icon"></i>
+    <div class="header">
+        Edit variable
+    </div>
+    <div class="content">
+        <div class="description">
+            <form class="ui form">
+                <div class="two fields">
+                    <div class="field">
+                        <label for="edit-variable-key">Key</label>
+                        <input type="text" id="edit-variable-key" name="edit-variable-key" placeholder="Key">
+                    </div>
+                    <div class="field">
+                        <label for="edit-variable-value">Value</label>
+                        <input type="text" id="edit-variable-value" name="edit-variable-value" placeholder="Value">
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui negative deny button">
+            Cancel
+        </div>
+        <div class="ui positive labeled icon button" id="edit-variable-id" onclick="editVariable()">
+            <i class="plus icon"></i>
+            Save
+        </div>
+    </div>
+</div>
+<!-- Create Jira tasks modal -->
+<div class="ui large modal" id="create-jira-tasks-modal">
+    <i class="close icon"></i>
+    <div class="header">
+        The following tasks will be created in project named: <em>{{ project }}</em>
+    </div>
+    <div class="content">
+        <div class="description scrolling content">
+            <table class="ui blue celled table" id="create-jira-tasks-table">
+                <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Assignee</th>
+                    <th>Label</th>
+                    <th>Sprint</th>
+                    <th>Order</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="actions">
+        <div class="ui negative deny button">
+            Cancel
+        </div>
+        <div class="ui positive labeled icon button" onclick="createJiraTasks()">
+            <i class="plus icon"></i>
+            Create
+        </div>
+    </div>
+</div>
+</body>
+</html>
