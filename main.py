@@ -44,6 +44,11 @@ def forbidden(e):
     return render_template('403.html'), 403
 
 
+@APP.errorhandler(500)
+def internal_server_error(e):
+    return render_template('500.html', e=e), 500
+
+
 @APP.route('/')
 def index():
     return render_template('index.html', projects=projects)
@@ -57,7 +62,7 @@ def creator():
     if project_key not in [project['key'] for project in projects]:
         return render_template('400.html'), 400
     else:
-        response = JIRA.my_permissions(projectKey=project_key, permissions='CREATE_ISSUES')
+        response = JIRA.my_permissions(projectKey=project_key, permissions='CREATE_ISSUES,EDIT_ISSUES')
         # check if havePermission is True, if not, redirect to 403
         if not response['permissions']['CREATE_ISSUES']['havePermission']:
             return render_template('403.html'), 403
@@ -148,9 +153,6 @@ def get_task(task_id):
 def get_tasks():
     tasks2 = copy.deepcopy(tasks)
 
-    print(sprints)
-    print(order_types)
-    print(tasks2)
     for task in tasks2:
         for sprint in sprints:
             if int(task['sprint']) == sprint['id']:
@@ -160,8 +162,6 @@ def get_tasks():
             if int(task['order']) == order_type['id']:
                 task['order'] = order_type['name']
                 break
-
-    print(tasks2)
 
     return jsonify(tasks2)
 
@@ -267,21 +267,28 @@ def generate():
             task['name'] = task['name'].replace('$' + variable['key'] + '$', variable['value'])
             task['description'] = task['description'].replace('$' + variable['key'] + '$', variable['value'])
             task['label'] = task['label'].replace('$' + variable['key'] + '$', variable['value'])
-            task['label'] = task['label'].replace(' ', '-')
+
+        task['label'] = task['label'].replace(' ', '-')
 
     # generate tasks
     for task in tasks_with_replaced_variables:
-        print(selected_project_key)
-        print(task)
-        print(tasks)
-        JIRA.create_issue(project=selected_project_key,
-                          summary=task['name'],
-                          description=task['description'],
-                          issuetype={'name': task['type']},
-                          assignee={'name': task['assignee']},
-                          labels=[task['label']],
-                          customfield_10006=int(task['sprint']),
-                          customfield_12400={'id': task['order']})
+        if int(task['sprint']) == -1:
+            JIRA.create_issue(project=selected_project_key,
+                              summary=task['name'],
+                              description=task['description'],
+                              issuetype={'name': task['type']},
+                              assignee={'name': task['assignee']},
+                              labels=[task['label']],
+                              customfield_12400={'id': task['order']})
+        else:
+            JIRA.create_issue(project=selected_project_key,
+                              summary=task['name'],
+                              description=task['description'],
+                              issuetype={'name': task['type']},
+                              assignee={'name': task['assignee']},
+                              labels=[task['label']],
+                              customfield_10006=int(task['sprint']),
+                              customfield_12400={'id': task['order']})
 
     return jsonify({'success': True})
 
@@ -291,10 +298,11 @@ def update(project_key):
     issue_types = utils.get_issue_types(JIRA, project_key)
     assignees = utils.get_assignees(JIRA, project_key)
     sprints = utils.get_sprints(JIRA, project_key)
+    sprints.append({'id': -1, 'name': 'Backlog'})
     order_types = utils.get_order_types(JIRA, project_key)
 
 
 if __name__ == '__main__':
-    # APP.run(debug=True, host=CONFIG['host'], port=CONFIG['port'])
-    serve(APP, host=CONFIG['host'], port=CONFIG['port'])
+    APP.run(debug=True, host=CONFIG['host'], port=CONFIG['port'])
+    # serve(APP, host=CONFIG['host'], port=CONFIG['port'])
     
